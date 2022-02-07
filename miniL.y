@@ -1,12 +1,13 @@
     /* cs152-miniL phase2 */
 %{
+extern int yylex();
+extern int yyparse();
 void yyerror(const char *msg);
 %}
 
 %union{
   /* put your types here */
   int ival;
-  string *strval;
   char *sval;
 }
 
@@ -23,8 +24,8 @@ void yyerror(const char *msg);
 
 %start prog_start
 
-%token FUNCTION BEGINPARAMS ENDPARAMS BEGINLOCALS ENDLOCALS BEGINBODY ENDBODY INTEGER ARRAY OF IF THEN ENDIF ELSE WHILE DO beginloop endloop continue break read write
-%token not true false return 
+%token FUNCTION BEGINPARAMS ENDPARAMS BEGINLOCALS ENDLOCALS BEGINBODY ENDBODY INTEGER ARRAY OF IF THEN ENDIF ELSE WHILE DO BEGINLOOP ENDLOOP CONTINUE BREAK READ WRITE
+%token NOT TRUE FALSE RETURN EQUALITY NOT_EQ LESS_EQ GTR_EQ ASSIGN ERROR
 %token <ival> NUMBER
 %token <sval> IDENT
 
@@ -33,76 +34,71 @@ void yyerror(const char *msg);
 %% 
 
   /* write your rules here */
-  prog_start: functions {printf("prog_start -> functions")};
+  prog_start: functions {printf("prog_start -> functions\n");}
+  ;
+
+  functions: Function functions {printf("functions -> function functions\n");}
   |
   ;
 
-  functions: FUNCTION functions {printf("functions -> function functions")};
+  Function: FUNCTION IDENT ';' BEGINPARAMS declarations ENDPARAMS BEGINLOCALS declarations ENDLOCALS BEGINBODY statements ENDBODY {printf("function -> IDENT ';' beginparams declarations endparams beginlocals declarations endlocals beginbody statements endbody\n");}
+  ;
+
+  declarations: declaration ';' declarations {printf("declarations -> declaration ';' declarations\n");}
   |
   ;
 
-  Function: FUNCTION IDENT ';' BEGINPARAMS declarations ENDPARAMS BEGINLOCALS declarations ENDLOCALS BEGINBODY statements ENDBODY {printf("function -> IDENT ';' beginparams declarations endparams beginlocals declarations endlocals beginbody statements endbody")};
-  |
+  declaration: IDENT ':' INTEGER                      {printf("declaration -> IDENT %s ':' integer\n", $1);}
+  | IDENT ':' ARRAY '[' NUMBER ']' OF INTEGER         {printf("declaration -> IDENT %s ':' array '[' NUMBER %d ']' of integer\n", $1, $5);}
   ;
 
-  declarations: declaration ';' declarations {printf("declarations -> declaration ';' declarations")};
-  |
-  ;
-
-  declaration: IDENT ':' INTEGER                      {printf("declaration -> IDENT ':' integer")};
-  | IDENT ':' ARRAY '[' NUMBER ']' OF INTEGER         {printf("declaration -> IDENT ':' array '[' NUMBER ']' of integer")};
-  |
-  ;
-
-  expression : mult-expr                            {printf("expression -> mult-expr")};
-             | mult-expr '+'  expression             {printf("expression -> mult-expr '+'  expression")};
-             | mult-expr '-' expression             {printf("expression -> mult-expr '-' expression")};
+  expression : mult-expr                            {printf("expression -> mult-expr\n");}
+             | mult-expr '+'  expression             {printf("expression -> mult-expr '+'  expression\n");}
+             | mult-expr '-' expression             {printf("expression -> mult-expr '-' expression\n");}
              ;
 
-  statements: statement ';' statements                {printf("statements -> statement ';' statements")};
+  statements: statement ';' statements                {printf("statements -> statement ';' statements\n");}
   |
   ;
 
-  statement : var ":=" expression                                       {printf("statement -> var ":=" expression")};
-            | IF bool-exp THEN statements ENDIF                         {printf("statement -> if bool-exp then statements endif")};
-            | IF bool-exp THEN statements ELSE statements ENDIF         {printf("statement -> if bool-exp then statements else statements endif")};
-            | WHILE bool-exp beginloop statements endloop               {printf("statement -> while bool-exp beginloop statements endloop")};
-            | DO beginloop statements endloop WHILE bool-exp            {printf("statement -> do beginloop statements endloop while bool-exp")};
-            | read var                                                  {printf("statement -> read var")};
-            | write var                                                 {printf("statement -> write var")};
-            | continue                                                  {printf("statement -> continue")};
-            | break                                                     {printf("statement -> break")};
-            | return expression                                         {printf("statement -> return expression")};
-  |
+  statement : var ASSIGN expression                                     {printf("statement -> var ASSIGN expression\n");}
+            | IF bool-exp THEN statements ENDIF                         {printf("statement -> if bool-exp then statements endif\n");}
+            | IF bool-exp THEN statements ELSE statements ENDIF         {printf("statement -> if bool-exp then statements else statements endif\n");}
+            | WHILE bool-exp BEGINLOOP statements ENDLOOP               {printf("statement -> while bool-exp beginloop statements endloop\n");}
+            | DO BEGINLOOP statements ENDLOOP WHILE bool-exp            {printf("statement -> do beginloop statements endloop while bool-exp\n");}
+            | READ var                                                  {printf("statement -> read var\n");}
+            | WRITE var                                                 {printf("statement -> write var\n");}
+            | CONTINUE                                                  {printf("statement -> continue\n");}
+            | BREAK                                                     {printf("statement -> break\n");}
+            | RETURN expression                                         {printf("statement -> return expression\n");}
   ;
 
-  bool-exp : expression comp expression                             {printf("bool-exp -> expression comp expression")};
-           | not expression comp expression                         {printf("bool-exp -> not expression comp expression")};
+  bool-exp : expression comp expression                             {printf("bool-exp -> expression comp expression\n");}
+           | NOT expression comp expression                         {printf("bool-exp -> not expression comp expression\n");}
   ;
 
-  comp : "=="                                                           {printf("comp -> \"==\"")};
-  |      "<>"                                                           {printf("comp -> \"<>\"")};
-  |       '<'                                                           {printf("comp -> '<'")};
-  |       '>'                                                           {printf("comp -> '>'")};
-  |       "<="                                                          {printf("comp -> \"<=\"")};
-  |       ">="                                                          {printf("comp -> \">=\"")};
-  |
+  comp : EQUALITY                                                       {printf("comp -> EQUALITY\n");}
+  |      NOT_EQ                                                         {printf("comp -> NOT_EQ\n");}
+  |       '<'                                                           {printf("comp -> '<'\n");}
+  |       '>'                                                           {printf("comp -> '>'\n");}
+  |       LESS_EQ                                                       {printf("comp -> LESS_EQ\n");}
+  |       GTR_EQ                                                        {printf("comp -> GTR_EQ\n");}
   ;
 
-  mult-expr : term                                                      {printf("mult-expr -> term")};
-            | term '*' mult-expr                                          {printf("mult-expr -> term '*' mult-expr")};
-            | term '/' mult-expr                                          {printf("mult-expr -> term '/' mult-expr")};
-            | term '%' mult-expr                                          {printf("mult-expr -> term '%' mult-expr")};
+  mult-expr : term                                                      {printf("mult-expr -> term\n");}
+            | term '*' mult-expr                                          {printf("mult-expr -> term '*' mult-expr\n");}
+            | term '/' mult-expr                                          {printf("mult-expr -> term '/' mult-expr\n");}
+            | term '%' mult-expr                                          {printf("mult-expr -> term '%' mult-expr\n");}
             ;
 
-  term : var                                                            {printf("term -> var")};
-       | NUMBER                                                         {printf("term -> NUMBER")};
-       | '(' expression ')'                                             {printf("term -> '(' expression ')' ")};
-       | IDENT '(' expression ')'                                       {printf("term -> IDENT '(' expression ')' ")};
+  term : var                                                            {printf("term -> var\n");}
+       | NUMBER                                                         {printf("term -> NUMBER %d\n", $1);}
+       | '(' expression ')'                                             {printf("term -> '(' expression ')' \n");}
+       | IDENT '(' expression ')'                                       {printf("term -> IDENT %s '(' expression ')' \n", $1);}
        ;
 
-  var : IDENT                                                           {printf("var -> IDENT")};
-      | IDENT '[' expression ']'                                        {printf("var -> IDENT '[' expression ']' ")};
+  var : IDENT                                                           {printf("var -> IDENT %s\n", $1);}
+      | IDENT '[' expression ']'                                        {printf("var -> IDENT %s '[' expression ']' \n", $1);}
       |
       ;
 
@@ -116,5 +112,6 @@ int main(int argc, char **argv) {
 
 void yyerror(const char *msg) {
     /* implement your error handling */
-    printf("** Line %d: %s\n", lineno, msg);
+    extern int num_lines;
+    printf("Line %d: %s\n", num_lines, msg);
 }
